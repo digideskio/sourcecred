@@ -121,6 +121,7 @@ export default class App extends React.Component<Props, State> {
           )}
           <WeightConfig onChange={(ee) => this.setState({edgeEvaluator: ee})} />
           <PagerankTable
+            nodeToContributions={nodeToContributions}
             graph={graphWithMetadata ? graphWithMetadata.graph : null}
             adapters={graphWithMetadata ? graphWithMetadata.adapters : null}
             pagerankResult={pagerankResult}

@@ -3,7 +3,11 @@ import React from "react";
 import {mount, shallow} from "enzyme";
 import enzymeToJSON from "enzyme-to-json";
 
-import {PagerankTable, nodeDescription, neighborVerb} from "./PagerankTable";
+import {
+  PagerankTable,
+  nodeDescription,
+  contributionVerb,
+} from "./PagerankTable";
 import {pagerank} from "../../core/attribution/pagerank";
 import sortBy from "lodash.sortby";
 
@@ -197,12 +201,15 @@ describe("app/credExplorer/PagerankTable", () => {
 
     describe("tables", () => {
       function expectColumnCorrect(
+        // top level pagerankTable (contains the header)
+        pagerankTable: *,
+        // element to search for RecursiveTable (might be a nested table)
         element: *,
         name: string,
         tdToExpected: (x: *) => string,
         addressToExpected: (NodeAddressT) => string
       ) {
-        const header = element.find("th");
+        const header = pagerankTable.find("th");
         const headerTexts = header.map((x) => x.text());
         const headerIndex = headerTexts.indexOf(name);
         if (headerIndex === -1) {
@@ -228,6 +235,7 @@ describe("app/credExplorer/PagerankTable", () => {
           const {element, adapters} = exampleRender();
           expectColumnCorrect(
             element,
+            element,
             "Node",
             (td) => td.find("span").text(),
             (address) => nodeDescription(address, adapters)
@@ -237,6 +245,7 @@ describe("app/credExplorer/PagerankTable", () => {
         it("has a log score column", () => {
           const {element, pagerankResult} = exampleRender();
           expectColumnCorrect(
+            element,
             element,
             "log(score)",
             (td) => td.text(),
@@ -250,19 +259,53 @@ describe("app/credExplorer/PagerankTable", () => {
             }
           );
         });
+        it("has a contribution score column with empty entries", () => {
+          const {element, pagerankResult} = exampleRender();
+          expectColumnCorrect(
+            element,
+            element,
+            "log(contribution)",
+            (td) => td.text(),
+            (address) => {
+              return "—";
+            }
+          );
+        });
       });
       describe("sub-tables", () => {
-        it("have depth-based styling", () => {
-          const {element} = exampleRender();
+        function exampleExpanded() {
+          const {
+            element,
+            nodes,
+            edges,
+            pagerankResult,
+            nodeToContributions,
+            adapters,
+            graph,
+          } = exmapleRender();
           const getLevel = (level) => {
-            const rt = element.find("RecursiveTable").at(level);
+            const nt = element.find("NeighborsTables").at(level);
             const button = rt.find("button").first();
-            return {rt, button};
+            return {nt, button};
           };
+
           getLevel(0).button.simulate("click");
           getLevel(1).button.simulate("click");
-          const f = ({rt, button}) => ({
-            row: rt
+          return {
+            element,
+            nodes,
+            edges,
+            pagerankResult,
+            nodeToContributions,
+            adapters,
+            graph,
+            getLevel,
+          };
+        }
+        it("have depth-based styling", () => {
+          const {element, getLevel} = exampleExpanded();
+          const f = ({nt, button}) => ({
+            row: nt
               .find("tr")
               .first()
               .prop("style"),
@@ -270,40 +313,46 @@ describe("app/credExplorer/PagerankTable", () => {
           });
           expect([0, 1, 2].map((x) => f(getLevel(x)))).toMatchSnapshot();
         });
+        it("are sorted by contribution score", () => {
+          const {element, graph, pagerankResult, getLevel} = exampleExpanded();
+          const rows = getLevel(0).nt.find("RecursiveTable");
+          expect(rows).toHaveLength(Array.from(graph.nodes()).length);
+          const scores = rows.map((x) => {
+            const contribution = x.prop("contribution");
+            const node = x.prop("node");
+            if (contribution == null || node == null) {
+              throw new Error(`Null node or contribution`);
+            }
+            return contributionScore(node, contribution, pagerankResult);
+          });
+          expect(scores.every((x) => x != null)).toBe(true);
+          expect(scores).toEqual(sortBy(scores).reverse());
+        });
         it("display extra information about edges", () => {
-          const {element, nodes, graph, adapters} = exampleRender();
-          const getLevel = (level) => {
-            const rt = element.find("RecursiveTable").at(level);
-            const button = rt.find("button").first();
-            return {rt, button};
-          };
-          getLevel(0).button.simulate("click");
-          const nt = element.find("NeighborsTables");
-          expect(nt).toHaveLength(1);
-          const expectedNeighbors = Array.from(
-            graph.neighbors(nodes.bar1, {
-              direction: Direction.ANY,
-              nodePrefix: NodeAddress.empty,
-              edgePrefix: EdgeAddress.empty,
-            })
-          );
-          expect(nt.prop("neighbors")).toEqual(expectedNeighbors);
+          const {element, nodes, graph, adapters, getLevel} = exampleExpanded();
+          const nts = element.find("NeighborsTables");
+          expect(nts).toHaveLength(2);
+          const nt = nts.first();
+          const node = nt.prop("target");
+          expect(node).toEqual(nodes.bar1);
+          const expectedContributions = nodeToContributions.get(node);
+          expect(nt.prop("contributions")).toEqual(expectedNeighbors);
           const subTables = nt.find("RecursiveTable");
-          expect(subTables).toHaveLength(expectedNeighbors.length);
-          const actualEdgeVerbs = subTables.map((x) =>
+          expect(subTables).toHaveLength(expectedContributions.length);
+          const actualContributionVerbs = subTables.map((x) =>
             x
               .find("span")
               .children()
               .find("span")
               .text()
           );
-          const expectedEdgeVerbs = subTables.map((x) => {
-            const edge = x.prop("edge");
-            const node = x.prop("node");
-            return neighborVerb({edge, node}, adapters);
+          const expectedContributionVerbs = subTables.map((x) => {
+            const target = x.prop("node");
+            const contribution = x.prop("contribution");
+            return contributionVerb(target, contribution, adapters);
           });
 
-          expect(actualEdgeVerbs).toEqual(expectedEdgeVerbs);
+          expect(actualContributionVerbs).toEqual(expectedContributionVerbs);
           const actualFullDescriptions = subTables.map((x) =>
             x
               .find("span")
@@ -311,11 +360,11 @@ describe("app/credExplorer/PagerankTable", () => {
               .text()
           );
           const expectedFullDescriptions = subTables.map((x) => {
-            const edge = x.prop("edge");
             const node = x.prop("node");
+            const contribution = x.prop("contribution");
             const nd = nodeDescription(node, adapters);
-            const ev = neighborVerb({node, edge}, adapters);
-            return `${ev} ${nd}`;
+            const cv = contributionVerb(node, contribution, adapters);
+            return `${cv} ${nd}`;
           });
           expect(actualFullDescriptions).toEqual(expectedFullDescriptions);
           expect(actualFullDescriptions).toMatchSnapshot();

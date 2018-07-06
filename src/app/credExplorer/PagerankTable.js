@@ -13,16 +13,23 @@ import {
   EdgeAddress,
   type EdgeAddressT,
 } from "../../core/graph";
-import type {PagerankResult} from "../../core/attribution/pagerank";
+import type {
+  PagerankResult,
+  PagerankResultAndContributions,
+} from "../../core/attribution/pagerank";
 import type {PluginAdapter} from "../pluginAdapter";
+import {
+  contributorSource,
+  type NodeToContributions,
+  type Contribution,
+} from "../../core/attribution/graphToMarkovChain";
 
 const MAX_TABLE_ENTRIES = 100;
 
 type Props = {
-  pagerankResult: ?PagerankResult,
+  pagerankResultAndContributions: ?PagerankResultAndContributions,
   graph: ?Graph,
   adapters: ?$ReadOnlyArray<PluginAdapter>,
-  nodeToContributions: NodeToContributions,
 };
 
 type State = {
@@ -75,33 +82,28 @@ function edgeVerb(
   }
 }
 
-function neighborVerb(
-  {node, edge}: Neighbor,
-  adapters: $ReadOnlyArray<PluginAdapter>
-): string {
-  const forwardVerb = edgeVerb(edge.address, "FORWARD", adapters);
-  const backwardVerb = edgeVerb(edge.address, "BACKWARD", adapters);
-  if (edge.src === edge.dst) {
-    return `${forwardVerb} and ${backwardVerb}`;
-  } else if (edge.dst === node) {
-    return forwardVerb;
-  } else {
-    return backwardVerb;
-  }
-}
-
 export function contributionVerb(
   target: NodeAddressT,
   contribution: Contribution,
   adapters: $ReadOnlyArray<PluginAdapter>
 ): string {
-  switch (contribution.type) {
-    case "NEIGHBOR":
-      return neighborVerb(contribution.neighbor, adapters);
+  switch (contribution.contributor.type) {
+    case "IN_EDGE":
+      return edgeVerb(
+        contribution.contributor.edge.address,
+        "BACKWARD",
+        adapters
+      );
+    case "OUT_EDGE":
+      return edgeVerb(
+        contribution.contributor.edge.address,
+        "FORWARD",
+        adapters
+      );
     case "SYNTHETIC_LOOP":
       return "[synthetic loop]";
     default:
-      throw new Error((contribution.type: empty));
+      throw new Error((contribution.contributor.type: empty));
   }
 }
 
@@ -115,7 +117,7 @@ export class PagerankTable extends React.PureComponent<Props, State> {
     if (this.props.graph == null || this.props.adapters == null) {
       return <p>You must load a graph before seeing PageRank analysis.</p>;
     }
-    if (this.props.pagerankResult == null) {
+    if (this.props.pagerankResultAndContributions == null) {
       return <p>Please run PageRank to see analysis.</p>;
     }
     return (
@@ -128,8 +130,12 @@ export class PagerankTable extends React.PureComponent<Props, State> {
   }
 
   renderFilterSelect() {
-    const {graph, pagerankResult, adapters} = this.props;
-    if (graph == null || pagerankResult == null || adapters == null) {
+    const {graph, pagerankResultAndContributions, adapters} = this.props;
+    if (
+      graph == null ||
+      pagerankResultAndContributions == null ||
+      adapters == null
+    ) {
       throw new Error("Impossible.");
     }
 
@@ -167,8 +173,12 @@ export class PagerankTable extends React.PureComponent<Props, State> {
   }
 
   renderTable() {
-    const {graph, pagerankResult, adapters, nodeToContributions} = this.props;
-    if (graph == null || pagerankResult == null || adapters == null) {
+    const {graph, pagerankResultAndContributions, adapters} = this.props;
+    if (
+      graph == null ||
+      pagerankResultAndContributions == null ||
+      adapters == null
+    ) {
       throw new Error("Impossible.");
     }
     const topLevelFilter = this.state.topLevelFilter;
@@ -199,10 +209,9 @@ export class PagerankTable extends React.PureComponent<Props, State> {
                   )
             }
             graph={graph}
-            pagerankResult={pagerankResult}
+            pagerankResultAndContributions={pagerankResultAndContributions}
             depth={0}
             adapters={adapters}
-            nodeToContributions={nodeToContributions}
           />
         </tbody>
       </table>
@@ -210,19 +219,79 @@ export class PagerankTable extends React.PureComponent<Props, State> {
   }
 }
 
-type RTState = {expanded: boolean};
-type RTProps = {|
+type NodeRowState = {expanded: boolean};
+type NodeRowProps = {|
   +node: NodeAddressT,
-  // Present if this RT shows a neighbor (not a top-level node)
-  +contribution: Contribution,
   +graph: Graph,
-  +pagerankResult: PagerankResult,
-  +depth: number,
+  +pagerankResultAndContributions: PagerankResultAndContributions,
   +adapters: $ReadOnlyArray<PluginAdapter>,
-  +nodeToContributions: NodeToContributions,
 |};
 
-class RecursiveTable extends React.PureComponent<RTProps, RTState> {
+class NodeRow extends React.PureComponent<NodeRowProps, NodeRowState> {
+  constructor() {
+    super();
+    this.state = {expanded: false};
+  }
+
+  render() {
+    const {node, adapters, graph, pagerankResultAndContributions} = this.props;
+    const {expanded} = this.state;
+    const {pagerankResult} = pagerankResultAndContributions;
+
+    const p = pagerankResult.get(node);
+    if (p == null) {
+      throw new Error(`no PageRank value for ${NodeAddress.toString(node)}`);
+    }
+    const modifiedLogScore = Math.log(p) + 10;
+    const logScoreString = modifiedLogScore.toFixed(2);
+    const nodeDescriptionString = nodeDescription(node, adapters);
+
+    return [
+      <tr key="self">
+        <td style={{display: "flex", alignItems: "flex-start"}}>
+          <button
+            style={{marginRight: 5}}
+            onClick={() => {
+              this.setState(({expanded}) => ({
+                expanded: !expanded,
+              }));
+            }}
+          >
+            {expanded ? "\u2212" : "+"}
+          </button>
+          <span>{nodeDescriptionString}</span>
+        </td>
+        <td style={{textAlign: "right"}}>{"—"}</td>
+        <td style={{textAlign: "right"}}>{logScoreString}</td>
+      </tr>,
+      expanded && (
+        <ContributionRows
+          key="children"
+          parent={node}
+          graph={graph}
+          pagerankResultAndContributions={pagerankResultAndContributions}
+          depth={1}
+          adapters={adapters}
+        />
+      ),
+    ];
+  }
+}
+
+type ContributionRowState = {expanded: boolean};
+type ContributionRowProps = {|
+  +parent: NodeAddressT,
+  +contribution: Contribution,
+  +graph: Graph,
+  +pagerankResultAndContributions: PagerankResultAndContributions,
+  +depth: number,
+  +adapters: $ReadOnlyArray<PluginAdapter>,
+|};
+
+class ContributionRow extends React.PureComponent<
+  ContributionRowProps,
+  ContributionRowState
+> {
   constructor() {
     super();
     this.state = {expanded: false};
@@ -230,33 +299,35 @@ class RecursiveTable extends React.PureComponent<RTProps, RTState> {
 
   render() {
     const {
-      node,
+      parent,
       contribution,
       adapters,
       depth,
       graph,
-      pagerankResult,
-      nodeToContributions,
+      pagerankResultAndContributions,
     } = this.props;
     const {expanded} = this.state;
-    const probability = pagerankResult.get(node);
-    if (probability == null) {
-      throw new Error(`no PageRank value for ${NodeAddress.toString(node)}`);
+    const {
+      pagerankResult,
+      nodeToContributions,
+    } = pagerankResultAndContributions;
+
+    const source = contributorSource(parent, contribution.contributor);
+    const p = pagerankResult.get(source);
+    if (p == null) {
+      throw new Error(`no PageRank value for ${NodeAddress.toString(source)}`);
     }
-    const modifiedLogScore = Math.log(probability) + 10;
+    const modifiedLogScore = Math.log(p) + 10;
     const logScoreString = modifiedLogScore.toFixed(2);
-    let contributionVerbString = null;
-    let logContributionScoreString = null;
-    if (contribution != null) {
-      const contribScore = contributionScore(
-        node,
-        contribution,
-        pagerankResult
-      );
-      const modifiedLogContribScore = Math.log(contribScore) + 10;
-      logContributionScoreString = modifiedLogContribScore.toFixed(2);
-      contributionVerbString = contributionVerb(node, contribution, adapters);
-    }
+    const nodeDescriptionString = nodeDescription(source, adapters);
+    const contributionScore = p * contribution.weight;
+    const modifiedLogContributionScore = Math.log(contributionScore) + 10;
+    const logContributionScoreString = modifiedLogContributionScore.toFixed(2);
+    const contributionVerbString = contributionVerb(
+      parent,
+      contribution,
+      adapters
+    );
 
     return [
       <tr
@@ -292,21 +363,18 @@ class RecursiveTable extends React.PureComponent<RTProps, RTState> {
                 </span>{" "}
               </React.Fragment>
             )}
-            {nodeDescription(node, adapters)}
+            {nodeDescriptionString}
           </span>
         </td>
-        <td style={{textAlign: "right"}}>
-          {logContributionScoreString ? logContributionScoreString : "—"}
-        </td>
+        <td style={{textAlign: "right"}}>{logContributionScoreString}</td>
         <td style={{textAlign: "right"}}>{logScoreString}</td>
       </tr>,
       expanded && (
-        <NeighborsTables
+        <ContributionRows
           key="children"
-          nodeToContributions={nodeToContributions}
-          target={node}
+          parent={source}
           graph={graph}
-          pagerankResult={pagerankResult}
+          pagerankResultAndContributions={pagerankResultAndContributions}
           depth={depth + 1}
           adapters={adapters}
         />
@@ -314,14 +382,12 @@ class RecursiveTable extends React.PureComponent<RTProps, RTState> {
     ];
   }
 }
-
 type NodesTablesProps = {|
   +addresses: $ReadOnlyArray<NodeAddressT>,
   +graph: Graph,
-  +pagerankResult: PagerankResult,
+  +pagerankResultAndContributions: PagerankResultAndContributions,
   +depth: number,
   +adapters: $ReadOnlyArray<PluginAdapter>,
-  +nodeToContributions: NodeToContributions,
 |};
 
 class NodesTables extends React.PureComponent<NodesTablesProps> {
@@ -329,15 +395,14 @@ class NodesTables extends React.PureComponent<NodesTablesProps> {
     const {
       addresses,
       graph,
-      pagerankResult,
+      pagerankResultAndContributions,
       depth,
       adapters,
-      nodeToContributions,
     } = this.props;
     return sortBy(
       addresses,
       (x) => {
-        const p = pagerankResult.get(x);
+        const p = pagerankResultAndContributions.pagerankResult.get(x);
         if (p == null) {
           throw new Error(`No pagerank result for ${NodeAddress.toString(x)}`);
         }
@@ -347,31 +412,27 @@ class NodesTables extends React.PureComponent<NodesTablesProps> {
     )
       .slice(0, MAX_TABLE_ENTRIES)
       .map((address) => (
-        <RecursiveTable
-          depth={depth}
+        <NodeRow
           node={address}
-          contribution={null}
           graph={graph}
-          pagerankResult={pagerankResult}
+          pagerankResultAndContributions={pagerankResultAndContributions}
           key={address}
           adapters={adapters}
-          nodeToContributions={nodeToContributions}
         />
       ));
   }
 }
 
-type NeighborsTablesProps = {|
-  +target: NodeAddressT,
+type ContributionRowsProps = {|
+  +parent: NodeAddressT,
   +graph: Graph,
-  +pagerankResult: PagerankResult,
+  +pagerankResultAndContributions: PagerankResultAndContributions,
   +depth: number,
   +adapters: $ReadOnlyArray<PluginAdapter>,
-  +nodeToContributions: NodeToContributions,
 |};
 
 function contributionScore(target, contribution, pagerankResult) {
-  const source = sourceForContributor(contribution.contributor, target);
+  const source = contributorSource(target, contribution.contributor);
   const sourceScore = pagerankResult.get(source);
   if (sourceScore == null) {
     throw new Error(`No pagerank result for ${NodeAddress.toString(source)}`);
@@ -379,49 +440,56 @@ function contributionScore(target, contribution, pagerankResult) {
   return sourceScore * contribution.weight;
 }
 
-function contributionKey(target, contribution): string {
-  switch (contribution.type) {
-    case "NEIGHBOR":
-      return contribution.contributor.edge.address;
+function contributionKey(
+  target: NodeAddressT,
+  contribution: Contribution
+): string {
+  switch (contribution.contributor.type) {
+    case "IN_EDGE":
+      return "IN_EDGE:" + contribution.contributor.edge.address;
+    case "OUT_EDGE":
+      return "OUT_EDGE:" + contribution.contributor.edge.address;
     case "SYNTHETIC_LOOP":
-      // guaranteed not to conflict, as this is not an EdgeAddressT
-      return contribution.type;
+      return "SYNTHETIC_LOOP";
     default:
-      throw new Error((contribution.type: empty));
+      throw new Error((contribution.contributor.type: empty));
   }
 }
 
-class NeighborsTables extends React.PureComponent<NeighborsTablesProps> {
+class ContributionRows extends React.PureComponent<ContributionRowsProps> {
   render() {
     const {
       graph,
-      pagerankResult,
-      target,
-      nodeToContributions,
+      pagerankResultAndContributions,
+      parent,
       depth,
       adapters,
     } = this.props;
-    const contributionsForTarget = nodeToContributions.get(target);
-    if (contributionsForTarget == null) {
+    const {
+      nodeToContributions,
+      pagerankResult,
+    } = pagerankResultAndContributions;
+    const contributionsForParent = nodeToContributions.get(parent);
+    if (contributionsForParent == null) {
       throw new Error(
-        `Couldn't find contributions for ${NodeAddress.toString(target)}`
+        `Couldn't find contributions for ${NodeAddress.toString(parent)}`
       );
     }
     return sortBy(
-      contributionsForTarget,
-      (contribution) => contributionScore(target, contribution, pagerankResult),
-      (contribution) => contributionKey(target, contribution)
+      contributionsForParent,
+      (contribution) =>
+        -contributionScore(parent, contribution, pagerankResult),
+      (contribution) => contributionKey(parent, contribution)
     )
       .slice(0, MAX_TABLE_ENTRIES)
       .map((contribution) => (
-        <RecursiveTable
+        <ContributionRow
           depth={depth}
-          node={target}
+          parent={parent}
           contribution={contribution}
           graph={graph}
-          nodeToContributions={nodeToContributions}
-          pagerankResult={pagerankResult}
-          key={contributionKey(target, contribution)}
+          pagerankResultAndContributions={pagerankResultAndContributions}
+          key={contributionKey(parent, contribution)}
           adapters={adapters}
         />
       ));

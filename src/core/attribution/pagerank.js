@@ -7,6 +7,7 @@ import {
   createContributions,
   createOrderedSparseMarkovChain,
   type EdgeWeight,
+  type NodeToContributions,
 } from "./graphToMarkovChain";
 
 import {findStationaryDistribution} from "./markovChain";
@@ -17,6 +18,11 @@ export type PagerankOptions = {|
   +verbose?: boolean,
   +convergenceThreshold?: number,
   +maxIterations?: number,
+|};
+
+export type PagerankResultAndContributions = {|
+  +pagerankResult: PagerankResult,
+  +nodeToContributions: NodeToContributions,
 |};
 
 export type {EdgeWeight} from "./graphToMarkovChain";
@@ -35,7 +41,7 @@ export function pagerank(
   graph: Graph,
   edgeWeight: EdgeEvaluator,
   options?: PagerankOptions
-): PagerankResult {
+): PagerankResultAndContributions {
   const fullOptions = {
     ...defaultOptions(),
     ...(options || {}),
@@ -51,5 +57,9 @@ export function pagerank(
     convergenceThreshold: fullOptions.convergenceThreshold,
     maxIterations: fullOptions.maxIterations,
   });
-  return distributionToPagerankResult(osmc.nodeOrder, distribution);
+  const pagerankResult = distributionToPagerankResult(
+    osmc.nodeOrder,
+    distribution
+  );
+  return {pagerankResult, nodeToContributions: contributions};
 }

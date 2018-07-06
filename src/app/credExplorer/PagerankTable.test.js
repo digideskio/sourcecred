@@ -109,12 +109,12 @@ function example() {
     },
   ];
 
-  const pagerankResult = pagerank(graph, (_unused_Edge) => ({
+  const pagerankResultAndContributions = pagerank(graph, (_unused_Edge) => ({
     toWeight: 1,
     froWeight: 1,
   }));
 
-  return {adapters, nodes, edges, graph, pagerankResult};
+  return {adapters, nodes, edges, graph, pagerankResultAndContributions};
 }
 
 describe("app/credExplorer/PagerankTable", () => {
@@ -138,16 +138,20 @@ describe("app/credExplorer/PagerankTable", () => {
   describe("rendering with incomplete props", () => {
     it("renders expected message with null props", () => {
       const element = shallow(
-        <PagerankTable pagerankResult={null} graph={null} adapters={null} />
+        <PagerankTable
+          pagerankResultAndContributions={null}
+          graph={null}
+          adapters={null}
+        />
       );
       expect(enzymeToJSON(element)).toMatchSnapshot();
     });
-    it("renders with just pagerankResult", () => {
-      const {pagerankResult} = example();
+    it("renders with just pagerankResultAndContributions", () => {
+      const {pagerankResultAndContributions} = example();
       // No snapshot since this should never actually happen
       shallow(
         <PagerankTable
-          pagerankResult={pagerankResult}
+          pagerankResultAndContributions={pagerankResultAndContributions}
           graph={null}
           adapters={null}
         />
@@ -157,21 +161,29 @@ describe("app/credExplorer/PagerankTable", () => {
       const {graph} = example();
       // No snapshot since this should never actually happen
       shallow(
-        <PagerankTable pagerankResult={null} graph={graph} adapters={null} />
+        <PagerankTable
+          pagerankResultAndContributions={null}
+          graph={graph}
+          adapters={null}
+        />
       );
     });
     it("renders with just adapters", () => {
       const {adapters} = example();
       // No snapshot since this should never actually happen
       shallow(
-        <PagerankTable pagerankResult={null} graph={null} adapters={adapters} />
+        <PagerankTable
+          pagerankResultAndContributions={null}
+          graph={null}
+          adapters={adapters}
+        />
       );
     });
     it("renders expected message when there's no pagerank", () => {
       const {graph, adapters} = example();
       const element = shallow(
         <PagerankTable
-          pagerankResult={null}
+          pagerankResultAndContributions={null}
           graph={graph}
           adapters={adapters}
         />
@@ -182,10 +194,16 @@ describe("app/credExplorer/PagerankTable", () => {
 
   describe("full rendering", () => {
     function exampleRender() {
-      const {nodes, edges, adapters, graph, pagerankResult} = example();
+      const {
+        nodes,
+        edges,
+        adapters,
+        graph,
+        pagerankResultAndContributions,
+      } = example();
       const element = mount(
         <PagerankTable
-          pagerankResult={pagerankResult}
+          pagerankResultAndContributions={pagerankResultAndContributions}
           graph={graph}
           adapters={adapters}
         />
@@ -193,7 +211,15 @@ describe("app/credExplorer/PagerankTable", () => {
       verifyNoAdapterWarning();
       const select = element.find("select");
       expect(select).toHaveLength(1);
-      return {nodes, edges, adapters, graph, pagerankResult, element, select};
+      return {
+        nodes,
+        edges,
+        adapters,
+        graph,
+        pagerankResultAndContributions,
+        element,
+        select,
+      };
     }
     it("full render doesn't crash or error", () => {
       example();
@@ -224,10 +250,16 @@ describe("app/credExplorer/PagerankTable", () => {
       }
       describe("top-level", () => {
         it("are sorted by score", () => {
-          const {element, graph, pagerankResult} = exampleRender();
+          const {
+            element,
+            graph,
+            pagerankResultAndContributions,
+          } = exampleRender();
           const rows = element.find("RecursiveTable");
           expect(rows).toHaveLength(Array.from(graph.nodes()).length);
-          const scores = rows.map((x) => pagerankResult.get(x.prop("node")));
+          const scores = rows.map((x) =>
+            pagerankResultAndContributions.get(x.prop("node"))
+          );
           expect(scores.every((x) => x != null)).toBe(true);
           expect(scores).toEqual(sortBy(scores).reverse());
         });
@@ -243,14 +275,14 @@ describe("app/credExplorer/PagerankTable", () => {
           verifyNoAdapterWarning();
         });
         it("has a log score column", () => {
-          const {element, pagerankResult} = exampleRender();
+          const {element, pagerankResultAndContributions} = exampleRender();
           expectColumnCorrect(
             element,
             element,
             "log(score)",
             (td) => td.text(),
             (address) => {
-              const probability = pagerankResult.get(address);
+              const probability = pagerankResultAndContributions.get(address);
               if (probability == null) {
                 throw new Error(address);
               }
@@ -260,7 +292,7 @@ describe("app/credExplorer/PagerankTable", () => {
           );
         });
         it("has a contribution score column with empty entries", () => {
-          const {element, pagerankResult} = exampleRender();
+          const {element, pagerankResultAndContributions} = exampleRender();
           expectColumnCorrect(
             element,
             element,
@@ -278,11 +310,10 @@ describe("app/credExplorer/PagerankTable", () => {
             element,
             nodes,
             edges,
-            pagerankResult,
-            nodeToContributions,
+            pagerankResultAndContributions,
             adapters,
             graph,
-          } = exmapleRender();
+          } = exampleRender();
           const getLevel = (level) => {
             const nt = element.find("NeighborsTables").at(level);
             const button = rt.find("button").first();
@@ -295,8 +326,7 @@ describe("app/credExplorer/PagerankTable", () => {
             element,
             nodes,
             edges,
-            pagerankResult,
-            nodeToContributions,
+            pagerankResultAndContributions,
             adapters,
             graph,
             getLevel,
@@ -314,7 +344,12 @@ describe("app/credExplorer/PagerankTable", () => {
           expect([0, 1, 2].map((x) => f(getLevel(x)))).toMatchSnapshot();
         });
         it("are sorted by contribution score", () => {
-          const {element, graph, pagerankResult, getLevel} = exampleExpanded();
+          const {
+            element,
+            graph,
+            pagerankResultAndContributions,
+            getLevel,
+          } = exampleExpanded();
           const rows = getLevel(0).nt.find("RecursiveTable");
           expect(rows).toHaveLength(Array.from(graph.nodes()).length);
           const scores = rows.map((x) => {
@@ -323,7 +358,11 @@ describe("app/credExplorer/PagerankTable", () => {
             if (contribution == null || node == null) {
               throw new Error(`Null node or contribution`);
             }
-            return contributionScore(node, contribution, pagerankResult);
+            return contributionScore(
+              node,
+              contribution,
+              pagerankResultAndContributions
+            );
           });
           expect(scores.every((x) => x != null)).toBe(true);
           expect(scores).toEqual(sortBy(scores).reverse());

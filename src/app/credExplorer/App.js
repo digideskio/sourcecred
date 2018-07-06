@@ -8,6 +8,11 @@ import {createPluginAdapter as createGithubAdapter} from "../../plugins/github/p
 import {createPluginAdapter as createGitAdapter} from "../../plugins/git/pluginAdapter";
 import {Graph} from "../../core/graph";
 import {pagerank, type PagerankResult} from "../../core/attribution/pagerank";
+import {
+  contributorSource,
+  type NodeToContributions,
+  type Contribution,
+} from "../../core/attribution/graphToMarkovChain";
 import {PagerankTable} from "./PagerankTable";
 import type {PluginAdapter} from "../pluginAdapter";
 import {type EdgeEvaluator} from "../../core/attribution/pagerank";
@@ -24,7 +29,10 @@ type State = {
       +nodeCount: number,
       +edgeCount: number,
     |},
-    +pagerankResult: ?PagerankResult,
+    +pagerankResultAndContributions: ?{|
+      +pagerankResult: PagerankResult,
+      +nodeToContributions: NodeToContributions,
+    |},
   |},
   edgeEvaluator: ?EdgeEvaluator,
 };
@@ -38,7 +46,7 @@ export default class App extends React.Component<Props, State> {
     this.state = {
       repoOwner: "",
       repoName: "",
-      data: {graphWithMetadata: null, pagerankResult: null},
+      data: {graphWithMetadata: null, pagerankResultAndContributions: null},
       edgeEvaluator: null,
     };
   }
@@ -52,7 +60,7 @@ export default class App extends React.Component<Props, State> {
 
   render() {
     const {edgeEvaluator} = this.state;
-    const {graphWithMetadata, pagerankResult} = this.state.data;
+    const {graphWithMetadata, pagerankResultAndContributions} = this.state.data;
     return (
       <div style={{maxWidth: "66em", margin: "0 auto", padding: "0 10px"}}>
         <header className={css(styles.header)}>
@@ -94,10 +102,15 @@ export default class App extends React.Component<Props, State> {
                   throw new Error("Unexpected null value");
                 }
                 const {graph} = graphWithMetadata;
-                const pagerankResult = pagerank(graph, edgeEvaluator, {
-                  verbose: true,
-                });
-                const data = {graphWithMetadata, pagerankResult};
+                const pagerankResultAndContributions = pagerank(
+                  graph,
+                  edgeEvaluator,
+                  {verbose: true}
+                );
+                const data = {
+                  graphWithMetadata,
+                  pagerankResultAndContributions,
+                };
                 // In case a new graph was loaded while waiting for
                 // PageRank.
                 const stomped =
@@ -121,10 +134,9 @@ export default class App extends React.Component<Props, State> {
           )}
           <WeightConfig onChange={(ee) => this.setState({edgeEvaluator: ee})} />
           <PagerankTable
-            nodeToContributions={nodeToContributions}
             graph={graphWithMetadata ? graphWithMetadata.graph : null}
             adapters={graphWithMetadata ? graphWithMetadata.adapters : null}
-            pagerankResult={pagerankResult}
+            pagerankResultAndContributions={pagerankResultAndContributions}
           />
         </div>
       </div>
@@ -165,7 +177,7 @@ export default class App extends React.Component<Props, State> {
           nodeCount: Array.from(graph.nodes()).length,
           edgeCount: Array.from(graph.edges()).length,
         },
-        pagerankResult: null,
+        pagerankResultAndContributions: null,
       };
       this.setState({data});
     });

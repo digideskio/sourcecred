@@ -201,21 +201,25 @@ export class NodeRowList extends React.PureComponent<NodeRowListProps> {
   render() {
     const {nodes, sharedProps} = this.props;
     const {pnd, adapters, maxEntriesPerList} = sharedProps;
-    return sortBy(
-      nodes,
-      (n) => {
-        const r = pnd.get(n);
-        if (r == null) {
-          throw new Error(`Node ${NodeAddress.toString(n)} not found`);
-        }
-        return -r.score;
-      },
-      (n) => n
-    )
-      .slice(0, maxEntriesPerList)
-      .map((node) => (
-        <NodeRow node={node} key={node} sharedProps={sharedProps} />
-      ));
+    return (
+      <React.Fragment>
+        {sortBy(
+          nodes,
+          (n) => {
+            const r = pnd.get(n);
+            if (r == null) {
+              throw new Error(`Node ${NodeAddress.toString(n)} not found`);
+            }
+            return -r.score;
+          },
+          (n) => n
+        )
+          .slice(0, maxEntriesPerList)
+          .map((node) => (
+            <NodeRow node={node} key={node} sharedProps={sharedProps} />
+          ))}
+      </React.Fragment>
+    );
   }
 }
 

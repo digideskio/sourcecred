@@ -22,6 +22,7 @@ import {
   contributorSource,
 } from "../../core/attribution/graphToMarkovChain";
 import type {PluginAdapter} from "../pluginAdapter";
+import * as NullUtil from "../../util/null";
 
 // TODO: Factor this out and test it (#465)
 export function nodeDescription(
@@ -203,17 +204,7 @@ export class NodeRowList extends React.PureComponent<NodeRowListProps> {
     const {pnd, adapters, maxEntriesPerList} = sharedProps;
     return (
       <React.Fragment>
-        {sortBy(
-          nodes,
-          (n) => {
-            const r = pnd.get(n);
-            if (r == null) {
-              throw new Error(`Node ${NodeAddress.toString(n)} not found`);
-            }
-            return -r.score;
-          },
-          (n) => n
-        )
+        {sortBy(nodes, (n) => -NullUtil.get(pnd.get(n)).score, (n) => n)
           .slice(0, maxEntriesPerList)
           .map((node) => (
             <NodeRow node={node} key={node} sharedProps={sharedProps} />
@@ -241,22 +232,12 @@ export class NodeRow extends React.PureComponent<NodeRowProps, RowState> {
     const {node, sharedProps} = this.props;
     const {pnd, adapters} = sharedProps;
     const {expanded} = this.state;
-
-    const result = pnd.get(node);
-    if (result == null) {
-      throw new Error(
-        `No decomposition result for ${NodeAddress.toString(node)}`
-      );
-    }
-    const score = result.score;
-
+    const {score} = NullUtil.get(pnd.get(node));
     return [
       <tr key="self">
         <td style={{display: "flex", alignItems: "flex-start"}}>
           <button
-            style={{
-              marginRight: 5,
-            }}
+            style={{marginRight: 5}}
             onClick={() => {
               this.setState(({expanded}) => ({
                 expanded: !expanded,
@@ -294,15 +275,8 @@ export class ContributionRowList extends React.PureComponent<
   render() {
     const {depth, node, sharedProps} = this.props;
     const {pnd, adapters, maxEntriesPerList} = sharedProps;
-    const result = pnd.get(node);
-    if (result == null) {
-      throw new Error(
-        `No decomposition result for ${NodeAddress.toString(node)}`
-      );
-    }
-    const contributions = result.scoredContributions;
-
-    return contributions
+    const {scoredContributions} = NullUtil.get(pnd.get(node));
+    return scoredContributions
       .slice(0, maxEntriesPerList)
       .map((sc) => (
         <ContributionRow
@@ -345,11 +319,8 @@ export class ContributionRow extends React.PureComponent<
     } = this.props;
     const {pnd, adapters} = sharedProps;
     const {expanded} = this.state;
-    const targetResult = pnd.get(target);
-    if (targetResult == null) {
-      throw new Error(`No result for ${NodeAddress.toString(target)}`);
-    }
-    const contributionProportion = contributionScore / targetResult.score;
+    const {score: targetScore} = NullUtil.get(pnd.get(target));
+    const contributionProportion = contributionScore / targetScore;
     const contributionPercent = (contributionProportion * 100).toFixed(2);
 
     return [

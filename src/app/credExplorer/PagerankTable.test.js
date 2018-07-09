@@ -359,7 +359,7 @@ describe("app/credExplorer/PagerankTable", () => {
         expect(cvForContribution(contribution).find("Badge")).toHaveLength(1);
       }
     });
-    it("inward contributions render a `Badge` and description", () => {
+    it("for inward contributions, renders a `Badge` and description", () => {
       const {cvForContribution, inContribution} = setupCV();
       const view = cvForContribution(inContribution);
       const outerSpan = view.find("span").first();
@@ -368,7 +368,7 @@ describe("app/credExplorer/PagerankTable", () => {
       expect(badge.children().text()).toEqual("is barred by");
       expect(description.text()).toEqual('bar: NodeAddress["bar","a","1"]');
     });
-    it("synthetic contributions only render a `Badge`", () => {
+    it("for synthetic contributions, renders only a `Badge`", () => {
       const {cvForContribution, syntheticContribution} = setupCV();
       const view = cvForContribution(syntheticContribution);
       expect(view.find("span")).toHaveLength(0);

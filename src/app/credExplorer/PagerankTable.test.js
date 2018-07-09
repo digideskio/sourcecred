@@ -347,44 +347,40 @@ describe("app/credExplorer/PagerankTable", () => {
         syntheticContribution,
       };
     }
-    it("all contribution types have consistent badge styles", () => {
+    it("always renders exactly one `Badge`", () => {
       const {
         cvForContribution,
         inContribution,
         outContribution,
         syntheticContribution,
       } = setupCV();
-      const syntheticStyle = cvForContribution(syntheticContribution)
-        .find("span")
-        .first()
-        .prop("style");
-      const inStyle = cvForContribution(inContribution)
-        .find("span")
-        .at(1)
-        .prop("style");
-      const outStyle = cvForContribution(outContribution)
-        .find("span")
-        .at(1)
-        .prop("style");
-      expect(syntheticStyle).toEqual(inStyle);
-      expect(syntheticStyle).toEqual(outStyle);
-      expect(syntheticStyle).toMatchSnapshot();
+      for (const contribution of [
+        syntheticContribution,
+        inContribution,
+        outContribution,
+      ]) {
+        expect(cvForContribution(contribution).find("Badge")).toHaveLength(1);
+      }
     });
-    it("inward contributions render a badge and description", () => {
+    it("inward contributions render a `Badge` and description", () => {
+      const {cvForContribution, inContribution} = setupCV();
+      const view = cvForContribution(inContribution);
+      const outerSpan = view.find("span").first();
+      const badge = outerSpan.find("Badge");
+      const description = outerSpan.children().find("span");
+      expect(badge.children().text()).toEqual("is barred by");
+      expect(description.text()).toEqual('bar: NodeAddress["bar","a","1"]');
+    });
+    it("synthetic contributions only render a `Badge`", () => {
       const {cvForContribution, syntheticContribution} = setupCV();
       const view = cvForContribution(syntheticContribution);
-      const spans = view.find("span");
-      const badge = spans.at(1);
-      const description = spans.at(2);
-      expect(badge.text()).toEqual("foo");
-      expect(description.text()).toEqual("bar");
-    });
-    it("synthetic contributions only render a badge", () => {
-      const {cvForContribution, syntheticContribution} = setupCV();
-      const view = cvForContribution(syntheticContribution);
-      const spans = view.find("span");
-      expect(spans).toHaveLength(1);
-      expect(spans.text()).toEqual("synthetic loop");
+      expect(view.find("span")).toHaveLength(0);
+      expect(
+        view
+          .find("Badge")
+          .children()
+          .text()
+      ).toEqual("synthetic loop");
     });
   });
 });

@@ -371,7 +371,7 @@ export class ContributionView extends React.PureComponent<{|
   render() {
     const {contribution, target, adapters} = this.props;
     const source = contributorSource(target, contribution.contributor);
-    function badge(text: string) {
+    function Badge({children}) {
       return (
         // The outer <span> acts as a strut to ensure that the badge
         // takes up a full line height, even though its text is smaller.
@@ -383,7 +383,7 @@ export class ContributionView extends React.PureComponent<{|
               fontSize: "smaller",
             }}
           >
-            {text}
+            {children}
           </span>
         </span>
       );
@@ -391,18 +391,22 @@ export class ContributionView extends React.PureComponent<{|
     const {contributor} = contribution;
     switch (contributor.type) {
       case "SYNTHETIC_LOOP":
-        return badge("synthetic loop");
+        return <Badge>synthetic loop</Badge>;
       case "IN_EDGE":
         return (
           <span>
-            {badge(edgeVerb(contributor.edge.address, "BACKWARD", adapters))}{" "}
+            <Badge>
+              {edgeVerb(contributor.edge.address, "BACKWARD", adapters)}
+            </Badge>{" "}
             <span>{nodeDescription(contributor.edge.src, adapters)}</span>
           </span>
         );
       case "OUT_EDGE":
         return (
           <span>
-            {badge(edgeVerb(contributor.edge.address, "FORWARD", adapters))}{" "}
+            <Badge>
+              {edgeVerb(contributor.edge.address, "FORWARD", adapters)}
+            </Badge>{" "}
             <span>{nodeDescription(contributor.edge.dst, adapters)}</span>
           </span>
         );

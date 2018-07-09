@@ -13,6 +13,7 @@ import {
 } from "./PagerankTable";
 import {pagerank} from "../../core/attribution/pagerank";
 import sortBy from "lodash.sortby";
+import * as NullUtil from "../../util/null";
 
 import {
   Graph,
@@ -250,10 +251,61 @@ describe("app/credExplorer/PagerankTable", () => {
   });
 
   describe("NodeRowList", () => {
-    it("creates NodeRows with the right props", () => {});
-    it("creates up to maxEntriesPerList NodeRows", () => {});
-    it("NodeRows are sorted by score", () => {});
+    function sortedByScore(nodes: $ReadOnlyArray<NodeAddressT>, pnd) {
+      return sortBy(nodes, (node) => -NullUtil.get(pnd.get(node)).score);
+    }
+    function setup(maxEntriesPerList: number = 100000) {
+      const {adapters, pnd} = example();
+      const nodes = sortedByScore(Array.from(pnd.keys()), pnd)
+        .reverse() // ascending order!
+        .filter((x) =>
+          NodeAddress.hasPrefix(x, NodeAddress.fromParts(["foo"]))
+        );
+      expect(nodes).not.toHaveLength(0);
+      expect(nodes).not.toHaveLength(1);
+      expect(nodes).not.toHaveLength(pnd.size);
+      const sharedProps = {adapters, pnd, maxEntriesPerList};
+      const component = <NodeRowList sharedProps={sharedProps} nodes={nodes} />;
+      const element = shallow(component);
+      return {element, adapters, sharedProps, nodes};
+    }
+    it("creates `NodeRow`s with the right props", () => {
+      const {element, nodes, sharedProps} = setup();
+      const rows = element.find("NodeRow");
+      expect(rows).toHaveLength(nodes.length);
+      const rowNodes = rows.map((row) => row.prop("node"));
+      // Check that we selected the right set of nodes. We'll check
+      // order in a separate test case.
+      expect(rowNodes.slice().sort()).toEqual(nodes.slice().sort());
+      rows.forEach((row) => {
+        expect(row.prop("sharedProps")).toEqual(sharedProps);
+      });
+    });
+    it("creates up to `maxEntriesPerList` `NodeRow`s", () => {
+      const maxEntriesPerList = 1;
+      const {element, nodes, sharedProps} = setup(maxEntriesPerList);
+      expect(nodes.length).toBeGreaterThan(maxEntriesPerList);
+      const rows = element.find("NodeRow");
+      expect(rows).toHaveLength(maxEntriesPerList);
+      const rowNodes = rows.map((row) => row.prop("node"));
+      // Should have selected the right nodes.
+      expect(rowNodes).toEqual(
+        sortedByScore(nodes, sharedProps.pnd).slice(0, maxEntriesPerList)
+      );
+    });
+    it("sorts its children by score", () => {
+      const {
+        element,
+        nodes,
+        sharedProps: {pnd},
+      } = setup();
+      expect(nodes).not.toEqual(sortedByScore(nodes, pnd));
+      const rows = element.find("NodeRow");
+      const rowNodes = rows.map((row) => row.prop("node"));
+      expect(rowNodes).toEqual(sortedByScore(rowNodes, pnd));
+    });
   });
+
   describe("NodeRow", () => {});
   describe("ContributionRowList", () => {});
   describe("ContributionRow", () => {});

@@ -233,33 +233,35 @@ export class NodeRow extends React.PureComponent<NodeRowProps, RowState> {
     const {pnd, adapters} = sharedProps;
     const {expanded} = this.state;
     const {score} = NullUtil.get(pnd.get(node));
-    return [
-      <tr key="self">
-        <td style={{display: "flex", alignItems: "flex-start"}}>
-          <button
-            style={{marginRight: 5}}
-            onClick={() => {
-              this.setState(({expanded}) => ({
-                expanded: !expanded,
-              }));
-            }}
-          >
-            {expanded ? "\u2212" : "+"}
-          </button>
-          <span>{nodeDescription(node, adapters)}</span>
-        </td>
-        <td style={{textAlign: "right"}}>{"—"}</td>
-        <td style={{textAlign: "right"}}>{scoreDisplay(score)}</td>
-      </tr>,
-      expanded && (
-        <ContributionRowList
-          key="children"
-          depth={1}
-          node={node}
-          sharedProps={sharedProps}
-        />
-      ),
-    ];
+    return (
+      <React.Fragment>
+        <tr key="self">
+          <td style={{display: "flex", alignItems: "flex-start"}}>
+            <button
+              style={{marginRight: 5}}
+              onClick={() => {
+                this.setState(({expanded}) => ({
+                  expanded: !expanded,
+                }));
+              }}
+            >
+              {expanded ? "\u2212" : "+"}
+            </button>
+            <span>{nodeDescription(node, adapters)}</span>
+          </td>
+          <td style={{textAlign: "right"}}>{"—"}</td>
+          <td style={{textAlign: "right"}}>{scoreDisplay(score)}</td>
+        </tr>
+        {expanded && (
+          <ContributionRowList
+            key="children"
+            depth={1}
+            node={node}
+            sharedProps={sharedProps}
+          />
+        )}
+      </React.Fragment>
+    );
   }
 }
 

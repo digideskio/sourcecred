@@ -373,15 +373,18 @@ export class ContributionView extends React.PureComponent<{|
     const source = contributorSource(target, contribution.contributor);
     function badge(text: string) {
       return (
-        <span
-          style={{
-            display: "inline-block",
-            textTransform: "uppercase",
-            fontWeight: 700,
-            fontSize: "smaller",
-          }}
-        >
-          {text}
+        // The outer <span> acts as a strut to ensure that the badge
+        // takes up a full line height, even though its text is smaller.
+        <span>
+          <span
+            style={{
+              textTransform: "uppercase",
+              fontWeight: 700,
+              fontSize: "smaller",
+            }}
+          >
+            {text}
+          </span>
         </span>
       );
     }

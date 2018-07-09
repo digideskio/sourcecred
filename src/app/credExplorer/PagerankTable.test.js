@@ -316,13 +316,10 @@ describe("app/credExplorer/PagerankTable", () => {
       const {scoredContributions} = NullUtil.get(pnd.get(nodes.bar1));
       const contributions = scoredContributions.map((sc) => sc.contribution);
       function contributionByType(t) {
-        const contribution = contributions.filter(
-          (c) => c.contributor.type === t
-        )[0];
-        if (contribution == null) {
-          throw new Error(`Couldn't find contribution for type ${t}`);
-        }
-        return contribution;
+        return NullUtil.get(
+          contributions.filter((c) => c.contributor.type === t)[0],
+          `Couldn't find contribution for type ${t}`
+        );
       }
       const inContribution = contributionByType("IN_EDGE");
       const outContribution = contributionByType("OUT_EDGE");

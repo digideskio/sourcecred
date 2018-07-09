@@ -13,6 +13,7 @@ import {
 } from "./PagerankTable";
 import {pagerank} from "../../core/attribution/pagerank";
 import sortBy from "lodash.sortby";
+import {type Contribution} from "../../core/attribution/graphToMarkovChain";
 import * as NullUtil from "../../util/null";
 
 import {
@@ -309,5 +310,81 @@ describe("app/credExplorer/PagerankTable", () => {
   describe("NodeRow", () => {});
   describe("ContributionRowList", () => {});
   describe("ContributionRow", () => {});
-  describe("ContributionView", () => {});
+  describe("ContributionView", () => {
+    function setupCV() {
+      const {pnd, adapters, nodes} = example();
+      const {scoredContributions} = NullUtil.get(pnd.get(nodes.bar1));
+      const contributions = scoredContributions.map((sc) => sc.contribution);
+      function contributionByType(t) {
+        const contribution = contributions.filter(
+          (c) => c.contributor.type === t
+        )[0];
+        if (contribution == null) {
+          throw new Error(`Couldn't find contribution for type ${t}`);
+        }
+        return contribution;
+      }
+      const inContribution = contributionByType("IN_EDGE");
+      const outContribution = contributionByType("OUT_EDGE");
+      const syntheticContribution = contributionByType("SYNTHETIC_LOOP");
+      function cvForContribution(contribution: Contribution) {
+        return shallow(
+          <ContributionView
+            adapters={adapters}
+            contribution={contribution}
+            target={nodes.bar1}
+          />
+        );
+      }
+      return {
+        target: nodes.bar1,
+        adapters,
+        contributions,
+        pnd,
+        cvForContribution,
+        inContribution,
+        outContribution,
+        syntheticContribution,
+      };
+    }
+    it("all contribution types have consistent badge styles", () => {
+      const {
+        cvForContribution,
+        inContribution,
+        outContribution,
+        syntheticContribution,
+      } = setupCV();
+      const syntheticStyle = cvForContribution(syntheticContribution)
+        .find("span")
+        .first()
+        .prop("style");
+      const inStyle = cvForContribution(inContribution)
+        .find("span")
+        .at(1)
+        .prop("style");
+      const outStyle = cvForContribution(outContribution)
+        .find("span")
+        .at(1)
+        .prop("style");
+      expect(syntheticStyle).toEqual(inStyle);
+      expect(syntheticStyle).toEqual(outStyle);
+      expect(syntheticStyle).toMatchSnapshot();
+    });
+    it("inward contributions render a badge and description", () => {
+      const {cvForContribution, syntheticContribution} = setupCV();
+      const view = cvForContribution(syntheticContribution);
+      const spans = view.find("span");
+      const badge = spans.at(1);
+      const description = spans.at(2);
+      expect(badge.text()).toEqual("foo");
+      expect(description.text()).toEqual("bar");
+    });
+    it("synthetic contributions only render a badge", () => {
+      const {cvForContribution, syntheticContribution} = setupCV();
+      const view = cvForContribution(syntheticContribution);
+      const spans = view.find("span");
+      expect(spans).toHaveLength(1);
+      expect(spans.text()).toEqual("synthetic loop");
+    });
+  });
 });

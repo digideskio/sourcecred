@@ -1,5 +1,16 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`app/credExplorer/PagerankTable ContributionView all contribution types have consistent badge styles 1`] = `
+Object {
+  "display": "inline-block",
+  "fontSize": "smaller",
+  "fontWeight": 700,
+  "textTransform": "uppercase",
+}
+`;
+
+exports[`app/credExplorer/PagerankTable ContributionView synthetic contributions only render a badge 1`] = `"synthetic loop"`;
+
 exports[`app/credExplorer/PagerankTable PagerankTable has a filter select with expected label text 1`] = `"Filter by node type: "`;
 
 exports[`app/credExplorer/PagerankTable PagerankTable has a filter select with expected option groups 1`] = `

@@ -1,59 +1,331 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`core/attribution/pagerank respects explicit arguments 1`] = `
-Array [
-  Object {
-    "parts": Array [
-      "dst",
+Map {
+  "NodeAddress[\\"src\\"]" => Object {
+    "score": 0.25,
+    "scoredContributions": Array [
+      Object {
+        "contribution": Object {
+          "contributor": Object {
+            "type": "SYNTHETIC_LOOP",
+          },
+          "weight": 0.0004997501249375313,
+        },
+        "contributionScore": 0.00012493753123438283,
+        "source": "NodeAddress[\\"src\\"]",
+        "sourceScore": 0.25,
+      },
+      Object {
+        "contribution": Object {
+          "contributor": Object {
+            "edge": Object {
+              "address": "EdgeAddress[\\"hom\\",\\"1\\"]",
+              "dst": "NodeAddress[\\"dst\\"]",
+              "src": "NodeAddress[\\"src\\"]",
+            },
+            "type": "OUT_EDGE",
+          },
+          "weight": 0,
+        },
+        "contributionScore": 0,
+        "source": "NodeAddress[\\"dst\\"]",
+        "sourceScore": 0.25,
+      },
+      Object {
+        "contribution": Object {
+          "contributor": Object {
+            "edge": Object {
+              "address": "EdgeAddress[\\"hom\\",\\"2\\"]",
+              "dst": "NodeAddress[\\"dst\\"]",
+              "src": "NodeAddress[\\"src\\"]",
+            },
+            "type": "OUT_EDGE",
+          },
+          "weight": 0,
+        },
+        "contributionScore": 0,
+        "source": "NodeAddress[\\"dst\\"]",
+        "sourceScore": 0.25,
+      },
     ],
-    "probability": 0.25,
   },
-  Object {
-    "parts": Array [
-      "isolated",
+  "NodeAddress[\\"dst\\"]" => Object {
+    "score": 0.25,
+    "scoredContributions": Array [
+      Object {
+        "contribution": Object {
+          "contributor": Object {
+            "type": "SYNTHETIC_LOOP",
+          },
+          "weight": 1,
+        },
+        "contributionScore": 0.25,
+        "source": "NodeAddress[\\"dst\\"]",
+        "sourceScore": 0.25,
+      },
+      Object {
+        "contribution": Object {
+          "contributor": Object {
+            "edge": Object {
+              "address": "EdgeAddress[\\"hom\\",\\"1\\"]",
+              "dst": "NodeAddress[\\"dst\\"]",
+              "src": "NodeAddress[\\"src\\"]",
+            },
+            "type": "IN_EDGE",
+          },
+          "weight": 0.49975012493753124,
+        },
+        "contributionScore": 0.12493753123438281,
+        "source": "NodeAddress[\\"src\\"]",
+        "sourceScore": 0.25,
+      },
+      Object {
+        "contribution": Object {
+          "contributor": Object {
+            "edge": Object {
+              "address": "EdgeAddress[\\"hom\\",\\"2\\"]",
+              "dst": "NodeAddress[\\"dst\\"]",
+              "src": "NodeAddress[\\"src\\"]",
+            },
+            "type": "IN_EDGE",
+          },
+          "weight": 0.49975012493753124,
+        },
+        "contributionScore": 0.12493753123438281,
+        "source": "NodeAddress[\\"src\\"]",
+        "sourceScore": 0.25,
+      },
     ],
-    "probability": 0.25,
   },
-  Object {
-    "parts": Array [
-      "loop",
+  "NodeAddress[\\"loop\\"]" => Object {
+    "score": 0.25,
+    "scoredContributions": Array [
+      Object {
+        "contribution": Object {
+          "contributor": Object {
+            "edge": Object {
+              "address": "EdgeAddress[\\"loop\\"]",
+              "dst": "NodeAddress[\\"loop\\"]",
+              "src": "NodeAddress[\\"loop\\"]",
+            },
+            "type": "IN_EDGE",
+          },
+          "weight": 0.9990009990009991,
+        },
+        "contributionScore": 0.2497502497502498,
+        "source": "NodeAddress[\\"loop\\"]",
+        "sourceScore": 0.25,
+      },
+      Object {
+        "contribution": Object {
+          "contributor": Object {
+            "type": "SYNTHETIC_LOOP",
+          },
+          "weight": 0.0009990009990009992,
+        },
+        "contributionScore": 0.0002497502497502498,
+        "source": "NodeAddress[\\"loop\\"]",
+        "sourceScore": 0.25,
+      },
+      Object {
+        "contribution": Object {
+          "contributor": Object {
+            "edge": Object {
+              "address": "EdgeAddress[\\"loop\\"]",
+              "dst": "NodeAddress[\\"loop\\"]",
+              "src": "NodeAddress[\\"loop\\"]",
+            },
+            "type": "OUT_EDGE",
+          },
+          "weight": 0,
+        },
+        "contributionScore": 0,
+        "source": "NodeAddress[\\"loop\\"]",
+        "sourceScore": 0.25,
+      },
     ],
-    "probability": 0.25,
   },
-  Object {
-    "parts": Array [
-      "src",
+  "NodeAddress[\\"isolated\\"]" => Object {
+    "score": 0.25,
+    "scoredContributions": Array [
+      Object {
+        "contribution": Object {
+          "contributor": Object {
+            "type": "SYNTHETIC_LOOP",
+          },
+          "weight": 1,
+        },
+        "contributionScore": 0.25,
+        "source": "NodeAddress[\\"isolated\\"]",
+        "sourceScore": 0.25,
+      },
     ],
-    "probability": 0.25,
   },
-]
+}
 `;
 
 exports[`core/attribution/pagerank snapshots as expected on the advanced graph 1`] = `
-Array [
-  Object {
-    "parts": Array [
-      "dst",
+Map {
+  "NodeAddress[\\"src\\"]" => Object {
+    "score": 3.120317183596679e-11,
+    "scoredContributions": Array [
+      Object {
+        "contribution": Object {
+          "contributor": Object {
+            "type": "SYNTHETIC_LOOP",
+          },
+          "weight": 0.0004997501249375313,
+        },
+        "contributionScore": 1.5593789023471662e-14,
+        "source": "NodeAddress[\\"src\\"]",
+        "sourceScore": 3.120317183596679e-11,
+      },
+      Object {
+        "contribution": Object {
+          "contributor": Object {
+            "edge": Object {
+              "address": "EdgeAddress[\\"hom\\",\\"1\\"]",
+              "dst": "NodeAddress[\\"dst\\"]",
+              "src": "NodeAddress[\\"src\\"]",
+            },
+            "type": "OUT_EDGE",
+          },
+          "weight": 0,
+        },
+        "contributionScore": 0,
+        "source": "NodeAddress[\\"dst\\"]",
+        "sourceScore": 0.4999999999687968,
+      },
+      Object {
+        "contribution": Object {
+          "contributor": Object {
+            "edge": Object {
+              "address": "EdgeAddress[\\"hom\\",\\"2\\"]",
+              "dst": "NodeAddress[\\"dst\\"]",
+              "src": "NodeAddress[\\"src\\"]",
+            },
+            "type": "OUT_EDGE",
+          },
+          "weight": 0,
+        },
+        "contributionScore": 0,
+        "source": "NodeAddress[\\"dst\\"]",
+        "sourceScore": 0.4999999999687968,
+      },
     ],
-    "probability": 0.4999999999687968,
   },
-  Object {
-    "parts": Array [
-      "isolated",
+  "NodeAddress[\\"dst\\"]" => Object {
+    "score": 0.4999999999687968,
+    "scoredContributions": Array [
+      Object {
+        "contribution": Object {
+          "contributor": Object {
+            "type": "SYNTHETIC_LOOP",
+          },
+          "weight": 1,
+        },
+        "contributionScore": 0.4999999999687968,
+        "source": "NodeAddress[\\"dst\\"]",
+        "sourceScore": 0.4999999999687968,
+      },
+      Object {
+        "contribution": Object {
+          "contributor": Object {
+            "edge": Object {
+              "address": "EdgeAddress[\\"hom\\",\\"1\\"]",
+              "dst": "NodeAddress[\\"dst\\"]",
+              "src": "NodeAddress[\\"src\\"]",
+            },
+            "type": "IN_EDGE",
+          },
+          "weight": 0.49975012493753124,
+        },
+        "contributionScore": 1.5593789023471658e-11,
+        "source": "NodeAddress[\\"src\\"]",
+        "sourceScore": 3.120317183596679e-11,
+      },
+      Object {
+        "contribution": Object {
+          "contributor": Object {
+            "edge": Object {
+              "address": "EdgeAddress[\\"hom\\",\\"2\\"]",
+              "dst": "NodeAddress[\\"dst\\"]",
+              "src": "NodeAddress[\\"src\\"]",
+            },
+            "type": "IN_EDGE",
+          },
+          "weight": 0.49975012493753124,
+        },
+        "contributionScore": 1.5593789023471658e-11,
+        "source": "NodeAddress[\\"src\\"]",
+        "sourceScore": 3.120317183596679e-11,
+      },
     ],
-    "probability": 0.25,
   },
-  Object {
-    "parts": Array [
-      "loop",
+  "NodeAddress[\\"loop\\"]" => Object {
+    "score": 0.25000000000000017,
+    "scoredContributions": Array [
+      Object {
+        "contribution": Object {
+          "contributor": Object {
+            "edge": Object {
+              "address": "EdgeAddress[\\"loop\\"]",
+              "dst": "NodeAddress[\\"loop\\"]",
+              "src": "NodeAddress[\\"loop\\"]",
+            },
+            "type": "IN_EDGE",
+          },
+          "weight": 0.9990009990009991,
+        },
+        "contributionScore": 0.24975024975024995,
+        "source": "NodeAddress[\\"loop\\"]",
+        "sourceScore": 0.25000000000000017,
+      },
+      Object {
+        "contribution": Object {
+          "contributor": Object {
+            "type": "SYNTHETIC_LOOP",
+          },
+          "weight": 0.0009990009990009992,
+        },
+        "contributionScore": 0.00024975024975024997,
+        "source": "NodeAddress[\\"loop\\"]",
+        "sourceScore": 0.25000000000000017,
+      },
+      Object {
+        "contribution": Object {
+          "contributor": Object {
+            "edge": Object {
+              "address": "EdgeAddress[\\"loop\\"]",
+              "dst": "NodeAddress[\\"loop\\"]",
+              "src": "NodeAddress[\\"loop\\"]",
+            },
+            "type": "OUT_EDGE",
+          },
+          "weight": 0,
+        },
+        "contributionScore": 0,
+        "source": "NodeAddress[\\"loop\\"]",
+        "sourceScore": 0.25000000000000017,
+      },
     ],
-    "probability": 0.25000000000000017,
   },
-  Object {
-    "parts": Array [
-      "src",
+  "NodeAddress[\\"isolated\\"]" => Object {
+    "score": 0.25,
+    "scoredContributions": Array [
+      Object {
+        "contribution": Object {
+          "contributor": Object {
+            "type": "SYNTHETIC_LOOP",
+          },
+          "weight": 1,
+        },
+        "contributionScore": 0.25,
+        "source": "NodeAddress[\\"isolated\\"]",
+        "sourceScore": 0.25,
+      },
     ],
-    "probability": 3.120317183596679e-11,
   },
-]
+}
 `;

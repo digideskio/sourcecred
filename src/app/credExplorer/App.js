@@ -10,7 +10,7 @@ import {Graph} from "../../core/graph";
 import {pagerank} from "../../core/attribution/pagerank";
 import {PagerankTable} from "./PagerankTable";
 import type {PluginAdapter} from "../pluginAdapter";
-import {type EdgeEvaluator} from "../../core/attribution/pagerank";
+import {type EdgeEvaluator} from "../../core/attribution/weights";
 import {WeightConfig} from "./WeightConfig";
 import type {PagerankNodeDecomposition} from "../../core/attribution/pagerankNodeDecomposition";
 

@@ -1,11 +1,10 @@
 // @flow
 
-import {type Edge, Graph} from "../graph";
+import {Graph} from "../graph";
 import {
   distributionToNodeDistribution,
   createContributions,
   createOrderedSparseMarkovChain,
-  type EdgeWeight,
 } from "./graphToMarkovChain";
 import {
   decompose,
@@ -13,6 +12,7 @@ import {
 } from "./pagerankNodeDecomposition";
 
 import {findStationaryDistribution} from "./markovChain";
+import type {EdgeEvaluator} from "./weights";
 
 export type {NodeDistribution} from "./graphToMarkovChain";
 export type {PagerankNodeDecomposition} from "./pagerankNodeDecomposition";
@@ -22,9 +22,6 @@ export type PagerankOptions = {|
   +convergenceThreshold?: number,
   +maxIterations?: number,
 |};
-
-export type {EdgeWeight} from "./graphToMarkovChain";
-export type EdgeEvaluator = (Edge) => EdgeWeight;
 
 function defaultOptions(): PagerankOptions {
   return {

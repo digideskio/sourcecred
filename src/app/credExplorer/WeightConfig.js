@@ -23,7 +23,6 @@ import * as GithubNode from "../../plugins/github/nodes";
 import * as GithubEdge from "../../plugins/github/edges";
 import * as GitNode from "../../plugins/git/nodes";
 import * as GitEdge from "../../plugins/git/edges";
-
 type Props = {
   onChange: (EdgeEvaluator) => void,
 };
@@ -60,9 +59,35 @@ const defaultNodeWeights = (): NodeWeights =>
     .set(GitNode._Prefix.tree, 0)
     .set(GitNode._Prefix.treeEntry, 0);
 
+type HeuristicConfig = {|
+  +enabled: boolean,
+  +multiply: number,
+  +add: number,
+|};
+
+const defaultConfig = () => ({enabled: false, multiply: 1, add: 0});
+
+type GithubHeuristics = {|
+  +pullAdditions: HeuristicConfig,
+  +pullDeletions: HeuristicConfig,
+  +pullNetAdditions: HeuristicConfig,
+  +pullNetDeletions: HeuristicConfig,
+  +pullDelta: HeuristicConfig,
+|};
+const GITHUB_HEURISTICS_KEY = "githubHeuristics";
+
+const defaultGithubHeuristics = (): GithubHeuristics => ({
+  pullAdditions: defaultConfig(),
+  pullDeletions: defaultConfig(),
+  pullNetAdditions: defaultConfig(),
+  pullNetDeletions: defaultConfig(),
+  pullDelta: defaultConfig(),
+});
+
 type State = {
   edgeWeights: EdgeWeights,
   nodeWeights: NodeWeights,
+  githubHeuristics: GithubHeuristics,
 };
 
 export class WeightConfig extends React.Component<Props, State> {
@@ -71,6 +96,7 @@ export class WeightConfig extends React.Component<Props, State> {
     this.state = {
       edgeWeights: defaultEdgeWeights(),
       nodeWeights: defaultNodeWeights(),
+      githubHeuristics: defaultGithubHeuristics(),
     };
   }
 
@@ -85,6 +111,10 @@ export class WeightConfig extends React.Component<Props, State> {
           nodeWeights: NullUtil.orElse(
             NullUtil.map(LocalStore.get(NODE_WEIGHTS_KEY), MapUtil.fromObject),
             state.nodeWeights
+          ),
+          githubHeuristics: NullUtil.orElse(
+            LocalStore.get(GITHUB_HEURISTICS_KEY),
+            state.githubHeuristics
           ),
         };
       },
@@ -105,18 +135,29 @@ export class WeightConfig extends React.Component<Props, State> {
           edgeWeights={this.state.edgeWeights}
           onChange={(ew) => this.setState({edgeWeights: ew}, () => this.fire())}
         />
-        <NodeConfig
-          nodeWeights={this.state.nodeWeights}
-          onChange={(nw) => this.setState({nodeWeights: nw}, () => this.fire())}
-        />
+        <div>
+          <NodeConfig
+            nodeWeights={this.state.nodeWeights}
+            onChange={(nw) =>
+              this.setState({nodeWeights: nw}, () => this.fire())
+            }
+          />
+          <GithubHeuristicConfig
+            githubHeuristics={this.state.githubHeuristics}
+            onChange={(h) =>
+              this.setState({githubHeuristics: h}, () => this.fire())
+            }
+          />
+        </div>
       </div>
     );
   }
 
   fire() {
-    const {edgeWeights, nodeWeights} = this.state;
+    const {edgeWeights, nodeWeights, githubHeuristics} = this.state;
     LocalStore.set(EDGE_WEIGHTS_KEY, MapUtil.toObject(edgeWeights));
     LocalStore.set(NODE_WEIGHTS_KEY, MapUtil.toObject(nodeWeights));
+    LocalStore.set(GITHUB_HEURISTICS_KEY, githubHeuristics);
     const edgePrefixes = Array.from(edgeWeights.entries()).map(
       ([prefix, {logWeight, directionality}]) => ({
         prefix,
@@ -133,6 +174,9 @@ export class WeightConfig extends React.Component<Props, State> {
     const nodeEvaluator = nodeByPrefix(nodePrefixes);
     const edgeEvaluator = edgeByPrefix(edgePrefixes);
     const composedEvaluator = liftNodeEvaluator(nodeEvaluator, edgeEvaluator);
+    // TODO: Refactor this so that we return the raw weights rather than a
+    // composed evaluator. This way, code that has access to the GitHub
+    // relational view can make use of the GitHub heuristics.
     this.props.onChange(composedEvaluator);
   }
 }
@@ -232,6 +276,86 @@ class NodeConfig extends React.Component<{
       <div>
         <h2>Node weights (in log space)</h2>
         {controls}
+      </div>
+    );
+  }
+}
+
+class GithubHeuristicConfig extends React.Component<{|
+  +githubHeuristics: GithubHeuristics,
+  +onChange: (GithubHeuristics) => void,
+|}> {
+  heuristicControls(key: string, {enabled, multiply, add}: HeuristicConfig) {
+    return (
+      <tr key={key}>
+        <td>{key}</td>
+        <td>
+          <label>
+            <input
+              type="checkbox"
+              checked={enabled}
+              onChange={() => {
+                const heuristics = {
+                  ...this.props.githubHeuristics,
+                  [key]: {enabled: !enabled, multiply, add},
+                };
+                this.props.onChange(heuristics);
+              }}
+            />
+          </label>
+        </td>
+        <td>
+          <label>
+            <input
+              type="number"
+              value={multiply}
+              onChange={(e) => {
+                const value: number = e.target.valueAsNumber;
+                const heuristics = {
+                  ...this.props.githubHeuristics,
+                  [key]: {enabled, multiply: value, add},
+                };
+                this.props.onChange(heuristics);
+              }}
+            />{" "}
+          </label>
+        </td>
+        <td>
+          <label>
+            <input
+              type="number"
+              value={add}
+              onChange={(e) => {
+                const value: number = e.target.valueAsNumber;
+                const heuristics = {
+                  ...this.props.githubHeuristics,
+                  [key]: {enabled, multiply, add: value},
+                };
+                this.props.onChange(heuristics);
+              }}
+            />{" "}
+          </label>
+        </td>
+      </tr>
+    );
+  }
+
+  render() {
+    const controls = Object.keys(this.props.githubHeuristics).map((k) =>
+      this.heuristicControls(k, this.props.githubHeuristics[k])
+    );
+    return (
+      <div>
+        <h2>Hacky GitHub Heuristics</h2>
+        <table>
+          <thead>
+            <th>Name</th>
+            <th>Enabled</th>
+            <th>*</th>
+            <th>+</th>
+          </thead>
+          {controls}
+        </table>
       </div>
     );
   }

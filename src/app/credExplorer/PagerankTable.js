@@ -325,43 +325,45 @@ export class ContributionRow extends React.PureComponent<
     const contributionProportion = contributionScore / targetScore;
     const contributionPercent = (contributionProportion * 100).toFixed(2);
 
-    return [
-      <tr
-        key="self"
-        style={{backgroundColor: `rgba(0,143.4375,0,${1 - 0.9 ** depth})`}}
-      >
-        <td style={{display: "flex", alignItems: "flex-start"}}>
-          <button
-            style={{
-              marginRight: 5,
-              marginLeft: 15 * depth,
-            }}
-            onClick={() => {
-              this.setState(({expanded}) => ({
-                expanded: !expanded,
-              }));
-            }}
-          >
-            {expanded ? "\u2212" : "+"}
-          </button>
-          <ContributionView
-            target={target}
-            contribution={contribution}
-            adapters={adapters}
+    return (
+      <React.Fragment>
+        <tr
+          key="self"
+          style={{backgroundColor: `rgba(0,143.4375,0,${1 - 0.9 ** depth})`}}
+        >
+          <td style={{display: "flex", alignItems: "flex-start"}}>
+            <button
+              style={{
+                marginRight: 5,
+                marginLeft: 15 * depth,
+              }}
+              onClick={() => {
+                this.setState(({expanded}) => ({
+                  expanded: !expanded,
+                }));
+              }}
+            >
+              {expanded ? "\u2212" : "+"}
+            </button>
+            <ContributionView
+              target={target}
+              contribution={contribution}
+              adapters={adapters}
+            />
+          </td>
+          <td style={{textAlign: "right"}}>{contributionPercent}%</td>
+          <td style={{textAlign: "right"}}>{scoreDisplay(sourceScore)}</td>
+        </tr>
+        {expanded && (
+          <ContributionRowList
+            key="children"
+            depth={depth + 1}
+            node={source}
+            sharedProps={sharedProps}
           />
-        </td>
-        <td style={{textAlign: "right"}}>{contributionPercent}%</td>
-        <td style={{textAlign: "right"}}>{scoreDisplay(sourceScore)}</td>
-      </tr>,
-      expanded && (
-        <ContributionRowList
-          key="children"
-          depth={depth + 1}
-          node={source}
-          sharedProps={sharedProps}
-        />
-      ),
-    ];
+        )}
+      </React.Fragment>
+    );
   }
 }
 

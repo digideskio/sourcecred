@@ -2,7 +2,6 @@
 
 import {type Edge, Graph} from "../graph";
 import {
-  type NodeDistribution,
   distributionToNodeDistribution,
   createContributions,
   createOrderedSparseMarkovChain,

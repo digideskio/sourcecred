@@ -4,23 +4,16 @@ import sortBy from "lodash.sortby";
 import React from "react";
 
 import {
-  type Edge,
   type EdgeAddressT,
-  type Neighbor,
   type NodeAddressT,
-  Direction,
   EdgeAddress,
-  Graph,
   NodeAddress,
 } from "../../core/graph";
 import type {
   PagerankNodeDecomposition,
   ScoredContribution,
 } from "../../core/attribution/pagerankNodeDecomposition";
-import {
-  type Contribution,
-  contributorSource,
-} from "../../core/attribution/graphToMarkovChain";
+import type {Contribution} from "../../core/attribution/graphToMarkovChain";
 import type {PluginAdapter} from "../pluginAdapter";
 import * as NullUtil from "../../util/null";
 
@@ -74,8 +67,6 @@ function scoreDisplay(probability: number) {
   const modifiedLogScore = Math.log(probability) + 10;
   return modifiedLogScore.toFixed(2);
 }
-
-const MAX_TABLE_ENTRIES = 100;
 
 type SharedProps = {|
   +pnd: PagerankNodeDecomposition,
@@ -201,7 +192,7 @@ type NodeRowListProps = {|
 export class NodeRowList extends React.PureComponent<NodeRowListProps> {
   render() {
     const {nodes, sharedProps} = this.props;
-    const {pnd, adapters, maxEntriesPerList} = sharedProps;
+    const {pnd, maxEntriesPerList} = sharedProps;
     return (
       <React.Fragment>
         {sortBy(nodes, (n) => -NullUtil.get(pnd.get(n)).score, (n) => n)
@@ -276,7 +267,7 @@ export class ContributionRowList extends React.PureComponent<
 > {
   render() {
     const {depth, node, sharedProps} = this.props;
-    const {pnd, adapters, maxEntriesPerList} = sharedProps;
+    const {pnd, maxEntriesPerList} = sharedProps;
     const {scoredContributions} = NullUtil.get(pnd.get(node));
     return (
       <React.Fragment>
@@ -349,11 +340,7 @@ export class ContributionRow extends React.PureComponent<
             >
               {expanded ? "\u2212" : "+"}
             </button>
-            <ContributionView
-              target={target}
-              contribution={contribution}
-              adapters={adapters}
-            />
+            <ContributionView contribution={contribution} adapters={adapters} />
           </td>
           <td style={{textAlign: "right"}}>{contributionPercent}%</td>
           <td style={{textAlign: "right"}}>{scoreDisplay(sourceScore)}</td>
@@ -373,12 +360,10 @@ export class ContributionRow extends React.PureComponent<
 
 export class ContributionView extends React.PureComponent<{|
   +contribution: Contribution,
-  +target: NodeAddressT,
   +adapters: $ReadOnlyArray<PluginAdapter>,
 |}> {
   render() {
-    const {contribution, target, adapters} = this.props;
-    const source = contributorSource(target, contribution.contributor);
+    const {contribution, adapters} = this.props;
     function Badge({children}) {
       return (
         // The outer <span> acts as a strut to ensure that the badge

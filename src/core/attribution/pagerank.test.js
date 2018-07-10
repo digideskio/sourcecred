@@ -1,7 +1,7 @@
 // @flow
 
 import {pagerank} from "./pagerank";
-import {EdgeAddress, Graph, NodeAddress, edgeToStrings} from "../graph";
+import {NodeAddress, edgeToStrings} from "../graph";
 import {advancedGraph} from "../graphTestUtil";
 import * as MapUtil from "../../util/map";
 

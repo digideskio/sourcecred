@@ -12,10 +12,7 @@ import {PagerankTable} from "./PagerankTable";
 import type {PluginAdapter} from "../pluginAdapter";
 import {type EdgeEvaluator} from "../../core/attribution/pagerank";
 import {WeightConfig} from "./WeightConfig";
-import type {
-  PagerankNodeDecomposition,
-  ScoredContribution,
-} from "../../core/attribution/pagerankNodeDecomposition";
+import type {PagerankNodeDecomposition} from "../../core/attribution/pagerankNodeDecomposition";
 
 import * as NullUtil from "../../util/null";
 

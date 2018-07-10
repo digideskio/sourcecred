@@ -19,7 +19,6 @@ import * as NullUtil from "../../util/null";
 import {
   Graph,
   type NodeAddressT,
-  Direction,
   NodeAddress,
   EdgeAddress,
 } from "../../core/graph";
@@ -125,12 +124,6 @@ function example() {
 }
 
 describe("app/credExplorer/PagerankTable", () => {
-  function verifyNoAdapterWarning() {
-    expect(console.warn).toHaveBeenCalledWith("No adapter for NodeAddress[]");
-    expect(console.warn).toHaveBeenCalledTimes(1);
-    // $ExpectFlowError
-    console.warn = jest.fn();
-  }
   beforeEach(() => {
     // $ExpectFlowError
     console.error = jest.fn();
@@ -320,7 +313,7 @@ describe("app/credExplorer/PagerankTable", () => {
       expect(setup().element.find("td")).toHaveLength(COLUMNS().length);
     });
     it("renders the node description", () => {
-      const {element, node} = setup();
+      const {element} = setup();
       const expectedDescription = 'bar: NodeAddress["bar","a","1"]';
       const descriptionColumn = COLUMNS().indexOf("Description");
       expect(descriptionColumn).not.toEqual(-1);
@@ -333,7 +326,7 @@ describe("app/credExplorer/PagerankTable", () => {
       ).toEqual(expectedDescription);
     });
     it("renders an empty contribution column", () => {
-      const {element, node} = setup();
+      const {element} = setup();
       const contributionColumn = COLUMNS().indexOf("Contribution");
       expect(contributionColumn).not.toEqual(-1);
       expect(
@@ -456,9 +449,8 @@ describe("app/credExplorer/PagerankTable", () => {
     it("renders the right number of columns", () => {
       expect(setup().element.find("td")).toHaveLength(COLUMNS().length);
     });
-    it("renders the source description", () => {
-      const {element, sharedProps, target, contribution} = setup();
-      const expectedDescription = 'foo: NodeAddress["foo","a","1"]';
+    it("renders the source view", () => {
+      const {element, sharedProps, contribution} = setup();
       const descriptionColumn = COLUMNS().indexOf("Description");
       expect(descriptionColumn).not.toEqual(-1);
       const view = element
@@ -468,7 +460,6 @@ describe("app/credExplorer/PagerankTable", () => {
       expect(view).toHaveLength(1);
       expect(view.props()).toEqual({
         adapters: sharedProps.adapters,
-        target: target,
         contribution: contribution.contribution,
       });
     });
@@ -490,7 +481,7 @@ describe("app/credExplorer/PagerankTable", () => {
       ).toEqual(expectedText);
     });
     it("renders a score column with the source's log-score", () => {
-      const {element, sharedProps, contribution} = setup();
+      const {element, contribution} = setup();
       const expectedScore = (Math.log(contribution.sourceScore) + 10).toFixed(
         2
       );
@@ -542,15 +533,10 @@ describe("app/credExplorer/PagerankTable", () => {
       const syntheticContribution = contributionByType("SYNTHETIC_LOOP");
       function cvForContribution(contribution: Contribution) {
         return shallow(
-          <ContributionView
-            adapters={adapters}
-            contribution={contribution}
-            target={nodes.bar1}
-          />
+          <ContributionView adapters={adapters} contribution={contribution} />
         );
       }
       return {
-        target: nodes.bar1,
         adapters,
         contributions,
         pnd,

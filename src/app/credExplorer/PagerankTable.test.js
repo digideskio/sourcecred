@@ -518,7 +518,7 @@ describe("app/credExplorer/PagerankTable", () => {
   });
 
   describe("ContributionView", () => {
-    function setupCV() {
+    function setup() {
       const {pnd, adapters, nodes} = example();
       const {scoredContributions} = NullUtil.get(pnd.get(nodes.bar1));
       const contributions = scoredContributions.map((sc) => sc.contribution);
@@ -552,7 +552,7 @@ describe("app/credExplorer/PagerankTable", () => {
         inContribution,
         outContribution,
         syntheticContribution,
-      } = setupCV();
+      } = setup();
       for (const contribution of [
         syntheticContribution,
         inContribution,
@@ -562,7 +562,7 @@ describe("app/credExplorer/PagerankTable", () => {
       }
     });
     it("for inward contributions, renders a `Badge` and description", () => {
-      const {cvForContribution, inContribution} = setupCV();
+      const {cvForContribution, inContribution} = setup();
       const view = cvForContribution(inContribution);
       const outerSpan = view.find("span").first();
       const badge = outerSpan.find("Badge");
@@ -570,8 +570,17 @@ describe("app/credExplorer/PagerankTable", () => {
       expect(badge.children().text()).toEqual("is barred by");
       expect(description.text()).toEqual('bar: NodeAddress["bar","a","1"]');
     });
+    it("for outward contributions, renders a `Badge` and description", () => {
+      const {cvForContribution, outContribution} = setup();
+      const view = cvForContribution(outContribution);
+      const outerSpan = view.find("span").first();
+      const badge = outerSpan.find("Badge");
+      const description = outerSpan.children().find("span");
+      expect(badge.children().text()).toEqual("bars");
+      expect(description.text()).toEqual("xox node!");
+    });
     it("for synthetic contributions, renders only a `Badge`", () => {
-      const {cvForContribution, syntheticContribution} = setupCV();
+      const {cvForContribution, syntheticContribution} = setup();
       const view = cvForContribution(syntheticContribution);
       expect(view.find("span")).toHaveLength(0);
       expect(

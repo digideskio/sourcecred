@@ -278,17 +278,21 @@ export class ContributionRowList extends React.PureComponent<
     const {depth, node, sharedProps} = this.props;
     const {pnd, adapters, maxEntriesPerList} = sharedProps;
     const {scoredContributions} = NullUtil.get(pnd.get(node));
-    return scoredContributions
-      .slice(0, maxEntriesPerList)
-      .map((sc) => (
-        <ContributionRow
-          key={JSON.stringify(sc.contribution.contributor)}
-          depth={depth}
-          target={node}
-          scoredContribution={sc}
-          sharedProps={sharedProps}
-        />
-      ));
+    return (
+      <React.Fragment>
+        {scoredContributions
+          .slice(0, maxEntriesPerList)
+          .map((sc) => (
+            <ContributionRow
+              key={JSON.stringify(sc.contribution.contributor)}
+              depth={depth}
+              target={node}
+              scoredContribution={sc}
+              sharedProps={sharedProps}
+            />
+          ))}
+      </React.Fragment>
+    );
   }
 }
 

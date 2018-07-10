@@ -449,6 +449,13 @@ describe("app/credExplorer/PagerankTable", () => {
     it("renders the right number of columns", () => {
       expect(setup().element.find("td")).toHaveLength(COLUMNS().length);
     });
+    it("has proper depth-based styling", () => {
+      const {element} = setup();
+      expect({
+        buttonStyle: element.find("button").prop("style"),
+        trStyle: element.find("tr").prop("style"),
+      }).toMatchSnapshot();
+    });
     it("renders the source view", () => {
       const {element, sharedProps, contribution} = setup();
       const descriptionColumn = COLUMNS().indexOf("Description");

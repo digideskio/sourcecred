@@ -12,6 +12,7 @@ import {
 import {edgeByPrefix, nodeByPrefix} from "./edgeWeights";
 import {
   type EdgeEvaluator,
+  composeNodeEvaluators,
   liftNodeEvaluator,
 } from "../../core/attribution/weights";
 import LocalStore from "./LocalStore";
@@ -19,12 +20,15 @@ import * as MapUtil from "../../util/map";
 import * as NullUtil from "../../util/null";
 
 // Hacks...
+import type {PluginAdapter} from "../pluginAdapter";
 import * as GithubNode from "../../plugins/github/nodes";
+import * as R from "../../plugins/github/relationalView";
 import * as GithubEdge from "../../plugins/github/edges";
 import * as GitNode from "../../plugins/git/nodes";
 import * as GitEdge from "../../plugins/git/edges";
 type Props = {
   onChange: (EdgeEvaluator) => void,
+  adapters: ?$ReadOnlyArray<PluginAdapter>,
 };
 
 // The key should be an EdgeAddressT, but a Flow bug prevents this.
@@ -171,7 +175,68 @@ export class WeightConfig extends React.Component<Props, State> {
         weight: 2 ** logWeight,
       })
     );
-    const nodeEvaluator = nodeByPrefix(nodePrefixes);
+    let nodeEvaluator = nodeByPrefix(nodePrefixes);
+    if (this.props.adapters != null) {
+      const githubAdapter = this.props.adapters.find(
+        (x) => x.name() === "GitHub"
+      );
+      if (githubAdapter == null) {
+        throw new Error("No Github adapter");
+      }
+      const view: R.RelationalView = (githubAdapter: any)._view;
+      function addPullEvaluator(
+        heuristics: HeuristicConfig,
+        fn: (R.Pull) => number
+      ) {
+        if (heuristics.enabled) {
+          const evaluator = (n: NodeAddressT) => {
+            if (NodeAddress.hasPrefix(n, GithubNode._Prefix.pull)) {
+              const pullAddress: GithubNode.PullAddress = (GithubNode.fromRaw(
+                (n: any)
+              ): any);
+              const pull = view.pull(pullAddress);
+              if (pull == null) {
+                throw new Error("Bad pull for ${JSON.stringify(pullAddress)}");
+              }
+              return fn(pull) * heuristics.multiply + heuristics.add;
+            } else {
+              return 0;
+            }
+          };
+          nodeEvaluator = composeNodeEvaluators(nodeEvaluator, evaluator);
+        }
+      }
+      function additionsDeletionsEvaluator(
+        heuristics: HeuristicConfig,
+        fn: ({a: number, d: number}) => number
+      ) {
+        const handler = (p: R.Pull) => {
+          const a = p.additions();
+          const d = p.deletions();
+          return fn({a, d});
+        };
+        addPullEvaluator(heuristics, handler);
+      }
+      function friendlyLog(x) {
+        if (x <= 1) {
+          return 0;
+        }
+        return Math.log(x);
+      }
+      const ghh = this.state.githubHeuristics;
+      additionsDeletionsEvaluator(ghh.pullAdditions, ({a}) => friendlyLog(a));
+      additionsDeletionsEvaluator(ghh.pullDeletions, ({d}) => friendlyLog(d));
+      additionsDeletionsEvaluator(ghh.pullNetAdditions, ({a, d}) =>
+        friendlyLog(a - d)
+      );
+      additionsDeletionsEvaluator(ghh.pullNetDeletions, ({a, d}) =>
+        friendlyLog(d - a)
+      );
+      additionsDeletionsEvaluator(ghh.pullDelta, ({a, d}) =>
+        friendlyLog(a + d)
+      );
+    }
+
     const edgeEvaluator = edgeByPrefix(edgePrefixes);
     const composedEvaluator = liftNodeEvaluator(nodeEvaluator, edgeEvaluator);
     // TODO: Refactor this so that we return the raw weights rather than a
@@ -349,12 +414,14 @@ class GithubHeuristicConfig extends React.Component<{|
         <h2>Hacky GitHub Heuristics</h2>
         <table>
           <thead>
-            <th>Name</th>
-            <th>Enabled</th>
-            <th>*</th>
-            <th>+</th>
+            <tr>
+              <th>Name</th>
+              <th>Enabled</th>
+              <th>*</th>
+              <th>+</th>
+            </tr>
           </thead>
-          {controls}
+          <tbody>{controls}</tbody>
         </table>
       </div>
     );

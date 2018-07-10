@@ -123,7 +123,10 @@ export default class App extends React.Component<Props, State> {
           ) : (
             <p>Graph not loaded.</p>
           )}
-          <WeightConfig onChange={(ee) => this.setState({edgeEvaluator: ee})} />
+          <WeightConfig
+            adapters={NullUtil.map(graphWithMetadata, (x) => x.adapters)}
+            onChange={(ee) => this.setState({edgeEvaluator: ee})}
+          />
           <PagerankTable
             adapters={NullUtil.map(graphWithMetadata, (x) => x.adapters)}
             pnd={pnd}

@@ -343,7 +343,7 @@ describe("app/credExplorer/PagerankTable", () => {
           .text()
       ).toEqual("—");
     });
-    it("renders a score column with the right log-score", () => {
+    it("renders a score column with the node's log-score", () => {
       const {element, sharedProps, node} = setup();
       const {score: rawScore} = NullUtil.get(sharedProps.pnd.get(node));
       const expectedScore = (Math.log(rawScore) + 10).toFixed(2);
@@ -378,7 +378,104 @@ describe("app/credExplorer/PagerankTable", () => {
     });
   });
   describe("ContributionRowList", () => {});
-  describe("ContributionRow", () => {});
+
+  describe("ContributionRow", () => {
+    function setup() {
+      const {pnd, adapters, nodes} = example();
+      const sharedProps = {adapters, pnd, maxEntriesPerList: 123};
+      const target = nodes.bar1;
+      const {scoredContributions} = NullUtil.get(pnd.get(target));
+      const alphaContributions = scoredContributions.filter(
+        (sc) => sc.source === nodes.fooAlpha
+      );
+      expect(alphaContributions).toHaveLength(1);
+      const contribution = alphaContributions[0];
+      const {source} = contribution;
+      const depth = 2;
+      const component = (
+        <ContributionRow
+          depth={depth}
+          target={target}
+          scoredContribution={contribution}
+          sharedProps={sharedProps}
+        />
+      );
+      const element = shallow(component);
+      return {element, depth, target, source, contribution, sharedProps};
+    }
+    it("renders the right number of columns", () => {
+      expect(setup().element.find("td")).toHaveLength(COLUMNS().length);
+    });
+    it("renders the source description", () => {
+      const {element, sharedProps, target, contribution} = setup();
+      const expectedDescription = 'foo: NodeAddress["foo","a","1"]';
+      const descriptionColumn = COLUMNS().indexOf("Description");
+      expect(descriptionColumn).not.toEqual(-1);
+      const view = element
+        .find("td")
+        .at(descriptionColumn)
+        .find("ContributionView");
+      expect(view).toHaveLength(1);
+      expect(view.props()).toEqual({
+        adapters: sharedProps.adapters,
+        target: target,
+        contribution: contribution.contribution,
+      });
+    });
+    it("renders the contribution percentage", () => {
+      const {element, contribution, sharedProps, target} = setup();
+      const contributionColumn = COLUMNS().indexOf("Contribution");
+      expect(contributionColumn).not.toEqual(-1);
+      const proportion =
+        contribution.contributionScore /
+        NullUtil.get(sharedProps.pnd.get(target)).score;
+      expect(proportion).toBeGreaterThan(0.0);
+      expect(proportion).toBeLessThan(1.0);
+      const expectedText = (proportion * 100).toFixed(2) + "%";
+      expect(
+        element
+          .find("td")
+          .at(contributionColumn)
+          .text()
+      ).toEqual(expectedText);
+    });
+    it("renders a score column with the source's log-score", () => {
+      const {element, sharedProps, contribution} = setup();
+      const expectedScore = (Math.log(contribution.sourceScore) + 10).toFixed(
+        2
+      );
+      const contributionColumn = COLUMNS().indexOf("Score");
+      expect(contributionColumn).not.toEqual(-1);
+      expect(
+        element
+          .find("td")
+          .at(contributionColumn)
+          .text()
+      ).toEqual(expectedScore);
+    });
+    it("does not render children by default", () => {
+      const {element} = setup();
+      expect(element.find("ContributionRowList")).toHaveLength(0);
+    });
+    it('has a working "expand" button', () => {
+      const {element, depth, sharedProps, source} = setup();
+      expect(element.find("button").text()).toEqual("+");
+
+      element.find("button").simulate("click");
+      expect(element.find("button").text()).toEqual("\u2212");
+      const crl = element.find("ContributionRowList");
+      expect(crl).toHaveLength(1);
+      expect(crl).not.toHaveLength(0);
+      expect(crl.prop("sharedProps")).toEqual(sharedProps);
+      expect(crl.prop("depth")).toBe(depth + 1);
+      expect(crl.prop("node")).toBe(source);
+
+      element.find("button").simulate("click");
+      expect(element.find("button").text()).toEqual("+");
+      expect(element.find("ContributionRowList")).toHaveLength(0);
+    });
+  });
+
   describe("ContributionView", () => {
     function setupCV() {
       const {pnd, adapters, nodes} = example();

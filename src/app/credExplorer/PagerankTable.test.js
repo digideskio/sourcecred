@@ -377,7 +377,57 @@ describe("app/credExplorer/PagerankTable", () => {
       expect(element.find("ContributionRowList")).toHaveLength(0);
     });
   });
-  describe("ContributionRowList", () => {});
+
+  describe("ContributionRowList", () => {
+    function setup(maxEntriesPerList: number = 100000) {
+      const {adapters, pnd, nodes} = example();
+      const depth = 2;
+      const node = nodes.bar1;
+      const sharedProps = {adapters, pnd, maxEntriesPerList};
+      const component = (
+        <ContributionRowList
+          depth={depth}
+          node={node}
+          sharedProps={sharedProps}
+        />
+      );
+      const element = shallow(component);
+      return {element, depth, node, sharedProps};
+    }
+    it("creates `ContributionRow`s with the right props", () => {
+      const {element, depth, node, sharedProps} = setup();
+      const contributions = NullUtil.get(sharedProps.pnd.get(node))
+        .scoredContributions;
+      const rows = element.find("ContributionRow");
+      expect(rows).toHaveLength(contributions.length);
+      const rowPropses = rows.map((row) => row.props());
+      // Order should be the same as the order in the decomposition.
+      expect(rowPropses).toEqual(
+        contributions.map((sc) => ({
+          depth,
+          sharedProps,
+          target: node,
+          scoredContribution: sc,
+        }))
+      );
+    });
+    it("limits the number of rows by `maxEntriesPerList`", () => {
+      const maxEntriesPerList = 1;
+      const {element, node, sharedProps} = setup(maxEntriesPerList);
+      const contributions = NullUtil.get(sharedProps.pnd.get(node))
+        .scoredContributions;
+      expect(contributions.length).toBeGreaterThan(maxEntriesPerList);
+      const rows = element.find("ContributionRow");
+      expect(rows).toHaveLength(maxEntriesPerList);
+      const rowContributions = rows.map((row) =>
+        row.prop("scoredContribution")
+      );
+      // Should have selected the right nodes.
+      expect(rowContributions).toEqual(
+        contributions.slice(0, maxEntriesPerList)
+      );
+    });
+  });
 
   describe("ContributionRow", () => {
     function setup() {
